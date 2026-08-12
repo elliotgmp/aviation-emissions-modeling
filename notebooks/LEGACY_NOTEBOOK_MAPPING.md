@@ -13,7 +13,7 @@ lives. Use this to trace any figure in the report back to the code that produces
 | 25–29 | `pd.cut` bins, `np.histogram`, bar plots | `eda.distance_histogram` + `viz.plot_distance_distribution` |
 | 30–44 | 12 near-duplicate per-type histogram blocks | one parametrised function + a loop in `scripts/02_run_eda.py` |
 | 35 | share of C172 legs < 50 km | `eda.short_haul_share` |
-| 45 | `fctconso` with `@np.vectorize` | `emissions.cem.PiecewiseCEM` (**271× faster**, bit-identical) |
+| 45 | `fctconso` with `@np.vectorize` | `emissions.cem.PiecewiseCEM` (**260× faster**, bit-identical) |
 | 46, 57 | hard-coded coefficients per type | `configs/icao_cem_coefficients.yaml` |
 | 49–56 | `for` loop building intensity lists, 5 copy-pasted plot blocks | `emissions.intensity.intensity_curve` + `viz.plot_intensity_curves` |
 | 50–54 | manually transcribed breakpoint coordinates | `PiecewiseCEM.efficiency_knee_km` / `optimal_range_km` (**computed**) |
