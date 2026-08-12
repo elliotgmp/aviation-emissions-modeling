@@ -148,13 +148,13 @@ route_detour:                     # W, Step 4
 benchmark:                        # scripts/benchmark_vectorization.py
   # Measured on 1 278 775 rows, B738 (3 segments), median of 3 runs.
   # Linux x86-64, Python 3.12, NumPy 2.4, pandas 3.0. Reproduce with `make bench`.
-  n_rows: 300000
-  np_vectorize_seconds: 1.7926      # the legacy notebook path
-  pandas_apply_seconds: 0.073357
-  np_select_seconds: 0.0047773
-  searchsorted_seconds: 0.003893      # this repo
-  speedup_vs_np_vectorize: 460
-  speedup_vs_pandas_apply: 19
+  n_rows: 1278775
+  np_vectorize_seconds: 2.344      # the legacy notebook path
+  pandas_apply_seconds: 0.1224
+  np_select_seconds: 0.0046811
+  searchsorted_seconds: 0.0055601      # this repo
+  speedup_vs_np_vectorize: 422
+  speedup_vs_pandas_apply: 22
   # Segment-count sweep: np.select is O(n.S) in both time and temporaries,
   # searchsorted is O(n log S) with a single output buffer.
   crossover_segments: 3             # searchsorted overtakes np.select from S=3
