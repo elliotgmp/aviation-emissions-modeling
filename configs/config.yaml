@@ -1,0 +1,109 @@
+# =============================================================================
+# Aviation Emissions Modeling & AI Dynamics -- master configuration
+# Every magic number in the codebase lives here. Nothing is hard-coded in src/.
+# =============================================================================
+
+paths:
+  raw_dir:       data/raw
+  interim_dir:   data/interim
+  processed_dir: data/processed
+  figures_dir:   reports/figures
+  results_dir:   reports/results
+
+data:
+  # Primary operational file: one row per flight leg.
+  flights_file:        volajd.csv
+  # Reference (pre-growth) week, used for the traffic-growth statistic.
+  flights_ref_file:    volav.csv
+  covid_file:          volcovid.csv
+  airline_file:        airline2025.csv
+  fleet_file:          inflotte.csv
+  airport_ref_file:    airportref.csv
+  sep: ";"
+  date_columns: [actual_departure_day]
+  # Read in chunks so a 1.3M x 79 CSV never has to fit in RAM twice.
+  chunksize: 250000
+
+cleaning:
+  # Source `distance` is in nautical miles; the whole codebase works in km.
+  nm_to_km: 1.852
+  drop_all_nan_columns: true
+  drop_cancelled: true
+  # Physically impossible legs. Max commercial GCD on Earth is ~20 037 km;
+  # the raw data contains a 139 318 nm outlier (see EDA notes).
+  min_distance_km: 1.0
+  max_distance_km: 20100.0
+  # Winsorisation of continuous columns before any model fitting.
+  winsorise_quantiles: [0.001, 0.999]
+  # Memory: cast object -> category and float64 -> float32 where safe.
+  downcast: true
+
+eda:
+  distance_bin_width_km: 100
+  distance_hist_max_km: 20000
+  top_n_aircraft: 20
+  # Aircraft types profiled individually in the original study.
+  focus_types: [B738, A320, C172, A20N, A388, B788, A346, B78X, A21N, B763]
+  focus_operator: ANA
+
+emissions:
+  co2_index: 3.16
+  # Types for which we hold ICAO CEM coefficients; anything else is left NaN
+  # rather than silently imputed (fail loud, never fabricate).
+  modelled_types: [B738, A320, A20N, A21N, B763, B78X, B788, A388, A346]
+  # Linear scale-up of modelled CO2 to whole-fleet CO2, based on the share of
+  # fleet distance actually covered by modelled types.
+  extrapolate_by_distance_share: true
+
+scenarios:
+  fleet_substitution:
+    # ANA case study: replace B78X rotations by the seat-equivalent number of
+    # B738 rotations.
+    from_type: B78X
+    to_type:   B738
+    # "distance_scaling" reproduces the legacy notebook exactly.
+    # "flight_scaling" is the physically correct estimator (see docs).
+    method: distance_scaling
+  route_detour:
+    # Great-circle vs actually-flown distance (geopolitical / ATC constraints).
+    cases:
+      - {name: "CDG-HND (AF274, B77W)", gcd_km: 9730, actual_km: 11979, aircraft: B788}
+      - {name: "BUD-ALA (THY1034, B38M)", gcd_km: 4442, actual_km: 5327, aircraft: B738}
+
+models:
+  target: co2_kg
+  # Feature block retained after the correlation screen (see features.py).
+  features:
+    numeric:  [distance_km, orthodromic_distance_km, duration_min, number_of_seats,
+               available_seat_kilometers, taxiing_out_time, taxiing_in_time,
+               relative_wind_composant]
+    categorical: [aircraft_type_icao, operator_icao, origin_country_code,
+                  destination_country_code, domestic]
+  screening:
+    method: spearman            # rank correlation: robust to the CEM kinks
+    abs_threshold: 0.10
+    fdr_alpha: 0.05             # Benjamini-Hochberg multiple-testing control
+    max_pairwise_collinearity: 0.95
+  validation:
+    scheme: purged_walk_forward
+    n_splits: 5
+    embargo_days: 1             # leakage guard on rotation-level autocorrelation
+    test_size_days: 7
+  algorithms: [ridge, random_forest, hist_gradient_boosting, xgboost]
+  random_state: 42
+
+sequence_models:
+  # LSTM on daily fleet-level CO2 series.
+  freq: D
+  lookback: 28
+  horizon: 7
+  hidden_size: 64
+  num_layers: 2
+  dropout: 0.2
+  epochs: 60
+  batch_size: 64
+  learning_rate: 0.001
+
+runtime:
+  n_jobs: -1
+  log_level: INFO

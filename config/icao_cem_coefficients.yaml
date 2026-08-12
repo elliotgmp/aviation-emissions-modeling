@@ -1,0 +1,117 @@
+# ---------------------------------------------------------------------------
+# ICAO CORSIA Emissions Model (CEM) - piecewise-linear fuel-burn coefficients
+# ---------------------------------------------------------------------------
+# Model form (per aircraft type):
+#
+#     fuel_kg(d) = intercept_s + slope_s * d      for d in segment s
+#
+# where d is the great-circle (or actual) distance in km and the segments are
+# delimited by breakpoints b1 < b2. A breakpoint set to `null` means the
+# segment does not exist for that airframe (1- or 2-segment model).
+#
+# CO2 is then obtained with the standard jet-A1 combustion factor:
+#     co2_kg = 3.16 * fuel_kg
+#
+# `payload_t` is the reference payload / max commercial load in tonnes used to
+# normalise emissions into kg CO2 per tonne-km (the "efficiency" metric).
+# `seats` is the reference seat count used for the per-seat counterfactuals.
+#
+# Coefficients transcribed from the Safran / ICAO CEM working set used in the
+# original exploratory notebook (`migpt12.ipynb`).
+# ---------------------------------------------------------------------------
+
+co2_factor: 3.16          # kg CO2 per kg of jet fuel burnt
+distance_unit: km
+fuel_unit: kg
+
+aircraft:
+
+  B738:
+    name: Boeing 737-800
+    segments:
+      - {intercept: 777.67143513049,  slope: 2.98551924733035}
+      - {intercept: 735.659716726312, slope: 3.18586546693167}
+      - {intercept: 1786.02963355839, slope: 2.83626784267787}
+    breakpoints: [209.695588405805, 3004.51102628072]
+    payload_t: 20.3
+    seats: 177
+
+  A320:
+    name: Airbus A320ceo
+    segments:
+      - {intercept: 659.348351027368,  slope: 4.54316330926586}
+      - {intercept: 1201.31921412284,  slope: 3.01826400350101}
+      - {intercept: -27.0804864918337, slope: 3.5073192963431}
+    breakpoints: [355.414197545085, 2511.7808120958]
+    payload_t: 16.6
+    seats: 165
+
+  A20N:
+    name: Airbus A320neo
+    segments:
+      - {intercept: 810.767403556277, slope: 2.69539904009955}
+      - {intercept: 883.666340202113, slope: 2.60427536929226}
+      - {intercept: 577.520955018561, slope: 2.75005888604633}
+    breakpoints: [800.0, 2100.0]
+    payload_t: 15.1
+    seats: 180
+
+  A21N:
+    name: Airbus A321neo
+    segments:
+      - {intercept: 721.415945512223, slope: 2.87100406889766}
+      - {intercept: 470.470391369614, slope: 3.12194962304027}
+      - {intercept: 227.248045380994, slope: 3.21923856143572}
+    breakpoints: [1000.0, 2500.0]
+    payload_t: 18.7
+    seats: 194
+
+  B763:
+    name: Boeing 767-300ER
+    segments:
+      - {intercept: 1685.33309228461,  slope: 5.60475525037697}
+      - {intercept: -1344.43239253154, slope: 6.33217528437616}
+    breakpoints: [4165.08391741588, null]
+    payload_t: 57.6
+    seats: 270
+
+  B78X:
+    name: Boeing 787-10
+    segments:
+      - {intercept: 2377.4387281701015,  slope: 5.65391816142863}
+      - {intercept: -2458.5703909997355, slope: 6.7860701762017186}
+    breakpoints: [4271.5192448242833, null]
+    payload_t: 26.4
+    seats: 330
+
+  # --- Single-segment types used for the Piano-X cross-validation (Step 3) ---
+  # These are the ICAO/CORSIA GCD-input formulas quoted in the Piano-X report.
+
+  A388:
+    name: Airbus A380-800
+    # Two ICAO/CORSIA GCD formulas are quoted in the Piano-X report for this
+    # airframe (one at 6 000 km, one at 14 075 km). The breakpoint below is the
+    # intersection of the two lines, i.e. the value that makes the piecewise
+    # model continuous: d* = (4210.581 + 26598.33) / (18.153 - 14.381).
+    segments:
+      - {intercept: 4210.581,  slope: 14.381}
+      - {intercept: -26598.33, slope: 18.153}
+    breakpoints: [8167.79, null]
+    payload_t: 84.0
+    seats: 519
+
+  A346:
+    name: Airbus A340-600
+    segments:
+      - {intercept: -2907.330531, slope: 10.53748817}
+    breakpoints: [null, null]
+    payload_t: 63.9
+    seats: 308
+
+  B788:
+    name: Boeing 787-8
+    segments:
+      - {intercept: -420.4553864, slope: 5.91450883}
+    breakpoints: [null, null]
+    payload_t: 23.052
+    seats: 242

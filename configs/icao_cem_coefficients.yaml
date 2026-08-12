@@ -1,0 +1,118 @@
+# =============================================================================
+# ICAO CORSIA CO2 Estimation and Reporting Tool (CERT) -- piecewise-affine
+# fuel-burn coefficients, per aircraft type.
+#
+# Model:  fuel(d) [kg] = intercept_s + slope_s * d   for d in segment s
+#         with segments delimited by ascending breakpoints (km).
+#
+# The model is CONTINUOUS at every breakpoint by construction; `make test`
+# asserts this to 1e-6 relative tolerance (test_cem.py::test_continuity).
+#
+# Provenance
+# ----------
+#   * B738, A320, A20N, A21N, B763, B78X : coefficients fitted in the original
+#     Safran study (legacy notebook, cells 46 & 57).
+#   * A388, A346, B788                   : single-segment design-range fits
+#     used in the Piano-X benchmark (Word report, Step 3.1).
+#
+# `max_payload_t`  = maximum structural payload (tonnes). Used as the
+#                    normaliser for the CO2 intensity metric
+#                    [kg CO2 / (tonne . km)].
+# `seats`          = typical single-operator seat count, used by the fleet
+#                    substitution scenario (ANA configuration).
+# =============================================================================
+
+co2_index: 3.16          # kg CO2 emitted per kg of Jet-A1 burned (ICAO / EN 16258)
+
+aircraft:
+
+  B738:
+    name: Boeing 737-800
+    max_payload_t: 20.3
+    seats: 177
+    segments:
+      - {breakpoint_km: 0.0,               intercept: 777.67143513049,  slope: 2.98551924733035}
+      - {breakpoint_km: 209.695588405805,  intercept: 735.659716726312, slope: 3.18586546693167}
+      - {breakpoint_km: 3004.51102628072,  intercept: 1786.02963355839, slope: 2.83626784267787}
+
+  A320:
+    name: Airbus A320ceo
+    max_payload_t: 16.6
+    seats: 180
+    segments:
+      - {breakpoint_km: 0.0,               intercept: 659.348351027368,   slope: 4.54316330926586}
+      - {breakpoint_km: 355.414197545085,  intercept: 1201.31921412284,   slope: 3.01826400350101}
+      - {breakpoint_km: 2511.7808120958,   intercept: -27.0804864918337,  slope: 3.5073192963431}
+
+  A20N:
+    name: Airbus A320neo
+    max_payload_t: 15.1
+    seats: 166
+    segments:
+      - {breakpoint_km: 0.0,     intercept: 810.767403556277, slope: 2.69539904009955}
+      - {breakpoint_km: 800.0,   intercept: 883.666340202113, slope: 2.60427536929226}
+      - {breakpoint_km: 2100.0,  intercept: 577.520955018561, slope: 2.75005888604633}
+
+  A21N:
+    name: Airbus A321neo
+    max_payload_t: 18.7
+    seats: 194
+    segments:
+      - {breakpoint_km: 0.0,     intercept: 721.415945512223, slope: 2.87100406889766}
+      - {breakpoint_km: 1000.0,  intercept: 470.470391369614, slope: 3.12194962304027}
+      - {breakpoint_km: 2500.0,  intercept: 227.248045380994, slope: 3.21923856143572}
+
+  B763:
+    name: Boeing 767-300ER
+    max_payload_t: 57.6
+    seats: 270
+    segments:
+      - {breakpoint_km: 0.0,                intercept: 1685.33309228461,  slope: 5.60475525037697}
+      - {breakpoint_km: 4165.08391741588,   intercept: -1344.43239253154, slope: 6.33217528437616}
+
+  B78X:
+    name: Boeing 787-10
+    max_payload_t: 26.4
+    seats: 330
+    segments:
+      - {breakpoint_km: 0.0,                 intercept: 2377.4387281701015,  slope: 5.65391816142863}
+      - {breakpoint_km: 4271.5192448242833,  intercept: -2458.5703909997355, slope: 6.7860701762017186}
+
+  # --- Single-segment design-range fits (Piano-X benchmark, Word report) -----
+
+  B788:
+    name: Boeing 787-8 baseline
+    max_payload_t: 23.052        # payload of the reference mission (kg -> t)
+    seats: 242
+    # Single-segment fits are calibrated on ONE reference mission. Outside this
+    # window the affine extrapolation is not merely imprecise, it is invalid:
+    # a negative intercept drives predicted fuel (and hence CO2 intensity)
+    # below zero at short range. The pipeline returns NaN outside the window
+    # rather than a plausible-looking number.
+    valid_range_km: [2000, 13600]
+    segments:
+      - {breakpoint_km: 0.0, intercept: -420.4553864, slope: 5.91450883}
+
+  A388:
+    name: Airbus A380-800
+    max_payload_t: 48.9          # payload of the 6000 km reference mission
+    seats: 517
+    valid_range_km: [8000, 15200]
+    segments:
+      - {breakpoint_km: 0.0, intercept: -26598.33, slope: 18.153}
+
+  A388_6000:
+    name: Airbus A380-800 (6000 km utilisation-peak fit)
+    max_payload_t: 48.9
+    seats: 517
+    valid_range_km: [3000, 9000]
+    segments:
+      - {breakpoint_km: 0.0, intercept: 4210.581, slope: 14.381}
+
+  A346:
+    name: Airbus A340-642
+    max_payload_t: 47.0
+    seats: 380
+    valid_range_km: [4000, 14500]
+    segments:
+      - {breakpoint_km: 0.0, intercept: -2907.330531, slope: 10.53748817}

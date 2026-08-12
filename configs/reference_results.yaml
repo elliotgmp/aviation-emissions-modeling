@@ -1,0 +1,165 @@
+# =============================================================================
+# Frozen reference results from the original Safran study.
+#
+# Purpose: these are golden values. `tests/` asserts that the refactored
+# vectorised code reproduces the legacy numbers to within tolerance, so the
+# rewrite is provably behaviour-preserving. Never edit to "make tests pass".
+#
+# Sources: L = legacy notebook cell output, W = Word/PDF report (Steps 3-4).
+# =============================================================================
+
+dataset:
+  n_flights: 1278775              # L, cell 14
+  n_features: 79                  # L, cell 13
+  n_flights_with_distance: 1114818  # L, cell 23  (12.82 % missing)
+  observation_window_days: 7
+  window_start: 2025-11-10
+  window_end: 2025-11-16
+  traffic_growth_vs_reference_pct: 27.81193247863846   # L, cell 20
+
+distance_distribution_nm:         # L, cell 23 (raw units, before nm->km)
+  mean: 586.7956
+  std: 878.7016
+  min: 0.0
+  q25: 103.25
+  median: 310.83
+  q75: 729.1975
+  max: 139318.1                   # physically impossible -> outlier filter
+
+fleet_mix_global_pct:             # L, cell 22
+  B738: 9.112115
+  A320: 7.998424
+  C172: 7.046663
+  A20N: 4.323268
+  P28A: 4.070582
+
+fleet_mix_ANA_pct:                # L, cell 41
+  A21N: 22.766458
+  B763: 19.553292
+  A20N: 17.163009
+  B772: 11.794671
+  B78X: 9.404389
+  A321: 5.799373
+  B77W: 4.584639
+  B789: 3.918495
+  B773: 2.860502
+  A388: 1.097179
+  B77L: 1.018809
+  B738: 0.039185
+
+mean_stage_length_km:
+  A346: 5960.820072112677          # L, cell 38
+  B788: 4729.317534979919          # L, cell 39
+  A20N_ANA: 688.7091349602123      # L, cell 72
+
+short_haul_share:
+  C172_under_50km_pct: 14.82349527349025   # L, cell 35
+
+cem_spot_checks_fuel_kg:          # L, cells 47/58/67
+  B738_at_1000km: 3921.52518366
+  B763_at_50km: 1965.5708548
+  B763_at_6000km: 36648.61931372542
+
+co2_intensity_at_last_breakpoint:  # kg CO2 / (tonne . km); recomputed exactly
+  B738: {breakpoint_km: 3004.51102628072,  intensity: 0.5340, legacy_reported: 0.531}
+  A20N: {breakpoint_km: 2100.0,            intensity: 0.6331, legacy_reported: 0.634}
+  A21N: {breakpoint_km: 2500.0,            intensity: 0.5594, legacy_reported: 0.559}
+  B763: {breakpoint_km: 4165.08391741588,  intensity: 0.3297, legacy_reported: 0.329}
+  B78X: {breakpoint_km: 4271.5192448242833, intensity: 0.7434, legacy_reported: 0.7434}
+  A320: {breakpoint_km: 2511.7808120958,   intensity: 0.6656, legacy_reported: null}
+
+ana_case_study:                   # L, cells 60-71, 84-86
+  modelled_co2_kg_week: 27665590.730244186
+  distance_coverage_pct: 46.8223241538616
+  extrapolated_co2_kg_week: 59086734.29209386
+  total_distance_km_week: 3329137.36524
+  share_of_extrapolated_pct:
+    A20N: 5.366389912864228
+    A21N: 8.212959715569374
+    B763: 23.55866331518481
+    B78X: 9.684                   # derived: 5721951.70 / 59086734.29
+  optimal_range_counterfactual_kg: 50756046.48593352
+  abatement_potential_pct: 14.099083163029086
+  substitution_B78X_to_B738:
+    seat_ratio: 1.864406779661017   # 330 / 177
+    actual_co2_kg: 5721951.700884949
+    counterfactual_co2_kg: 4857250.904591219
+    reduction_pct: 15.11199047975182
+
+piano_x_vs_icao:                  # W, Step 3.1 -- CO2 in kg
+  missions:
+    - {name: "A388 design range 7600 nm", distance_km: 14075.2, piano_x: 657804, icao: 723351.730896, gap_pct: 9.96}
+    - {name: "B763 design range 6070 nm", distance_km: 11241.64, piano_x: 202420, icao: 220696.32, gap_pct: 9.03}
+    - {name: "A346 design range 7682 nm", distance_km: 14227.064, piano_x: 435782, icao: 464055.32, gap_pct: 6.49}
+    - {name: "B788 mean stage 4729 km",   distance_km: 4729.0, piano_x: 72984, icao: 87055.65, gap_pct: 19.28}
+    - {name: "A388 utilisation peak 6000 km", distance_km: 6000.0, piano_x: 257004, icao: 285969.20, gap_pct: 11.27}
+  mean_absolute_gap_pct: 11.21
+  median_gap_pct: 9.96
+  std_gap_pct: 4.84
+  calibration:
+    multiplicative_k: 0.912901
+    raw_mape_pct: 11.21
+    # In-sample MAPE on n=5 with one free parameter is not evidence; the
+    # leave-one-out figures are what the model choice is made on.
+    in_sample_mape_pct: 2.82
+    loo_multiplicative_mape_pct: 3.24
+    loo_affine_mape_pct: 4.24
+    loo_worst_holdout_pct: 9.35      # B788, the mission with the largest raw gap
+    overfit_gap_pct: 0.41
+    recommended: multiplicative
+
+non_co2:                          # W, Steps 3.2 / 3.3 -- kg per mission
+  missions:
+    - {aircraft: B788, distance_km: 4729, co2: 72984,  nox: 252.6, hc: 3.28}
+    - {aircraft: A388, distance_km: 6000, co2: 257004, nox: 1454.7, hc: 0.39}
+    - {aircraft: A346, distance_km: 5960, co2: 161486, nox: 735.9, hc: 0.16}
+    - {aircraft: A306, distance_km: null, co2: 151719, nox: 614.6, hc: null}
+    - {aircraft: B763, distance_km: null, co2: 202420, nox: 757.8, hc: null}
+    - {aircraft: F70,  distance_km: null, co2: 15538,  nox: 42.4,  hc: null}
+  phase_split_pct:                # B788 reference mission
+    taxi_takeoff: 3.15
+    climb: 10.8
+    cruise: 83.6
+    descent: 1.2
+    approach_taxi: 1.2
+  nox_vs_co2_regression:
+    three_point_fit:  {slope: 0.006546, intercept: -257.92, r2: 0.9918}
+    six_point_fit:    {slope: 0.00537418, intercept: -128.3297, r2: 0.920957, pvalue: 0.0024}
+    through_origin:   {slope: 0.00469070, r2: 0.901471, g_nox_per_kg_co2: 4.6907}
+    spearman_rho: 1.0
+  hc_vs_co2: "no monotone relationship detected (n=3 usable points)"
+
+climb_speed_sensitivity:          # W, Step 3.4 -- A388, 6000 km, 48.9 t payload
+  baseline:  {profile: "250 KCAS / M0.82", co2: 257610, nox: 1436, hc: 0.46}
+  faster:    {profile: "270 KCAS / M0.84", co2: 256791, nox: 1437, hc: 0.43, d_co2_pct: -0.32}
+  slower:    {profile: "230 KCAS / M0.80", co2: 260052, nox: 1449, hc: 0.49, d_co2_pct: 0.95}
+
+route_detour:                     # W, Step 4
+  cases:
+    - {name: "CDG-HND (AF274, B77W)", gcd_km: 9730, actual_km: 11979, detour_pct: 23.1}
+    - {name: "BUD-ALA (THY1034, B38M)", gcd_km: 4442, actual_km: 5327, detour_pct: 19.9}
+  co2_penalty_B788_CDG_HND:
+    gcd:    {co2: 154125, nox: 543, hc: 6.2}
+    actual: {co2: 194645, nox: 693, hc: 7.6}
+    delta_co2_kg: 40520
+    delta_co2_pct: 26.3
+    delta_nox_pct: 27.6
+
+benchmark:                        # scripts/benchmark_vectorization.py
+  # Measured on 1 278 775 rows, B738 (3 segments), median of 3 runs.
+  # Linux x86-64, Python 3.12, NumPy 2.4, pandas 3.0. Reproduce with `make bench`.
+  n_rows: 300000
+  np_vectorize_seconds: 1.7926      # the legacy notebook path
+  pandas_apply_seconds: 0.073357
+  np_select_seconds: 0.0047773
+  searchsorted_seconds: 0.003893      # this repo
+  speedup_vs_np_vectorize: 460
+  speedup_vs_pandas_apply: 19
+  # Segment-count sweep: np.select is O(n.S) in both time and temporaries,
+  # searchsorted is O(n log S) with a single output buffer.
+  crossover_segments: 3             # searchsorted overtakes np.select from S=3
+  ratio_at_8_segments: 2.4
+  ratio_at_40_segments: 9.2
+  peak_memory_8_segments_mb:
+    searchsorted: 30.7              # 3.0x the input array
+    np_select: 101.0                # 9.9x the input array
